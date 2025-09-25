@@ -1,0 +1,21 @@
+{
+  "name": "ตารางวัคซีนเด็ก",
+  "short_name": "วัคซีนเด็ก",
+  "description": "แอปพลิเคชันสำหรับคำนวณและแสดงตารางการให้วัคซีนในเด็ก 0-5 ปี",
+  "start_url": "./vaccine-schedule.html",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/0d9488/ffffff?text=👶💉",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://placehold.co/512x512/0d9488/ffffff?text=👶💉",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

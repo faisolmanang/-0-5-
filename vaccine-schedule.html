@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตารางวัคซีนเด็ก</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        .date-input-container {
+            position: relative;
+        }
+        .date-input-container::after {
+            content: '(วว/ดด/ปปปป)';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            pointer-events: none;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex flex-col items-center min-h-screen">
+    <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 w-full max-w-4xl space-y-6">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center text-teal-600 mb-4">ตารางวัคซีนสำหรับเด็ก (0-5 ปี)</h1>
+        <p class="text-center text-gray-600 mb-6">กรุณาใส่วันเกิดของเด็กเพื่อดูตารางการให้วัคซีนที่แนะนำ</p>
+
+        <div class="space-y-4">
+            <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <label for="dob-text" class="text-lg font-medium text-gray-700 w-full sm:w-auto">วันเกิด:</label>
+                <div class="date-input-container flex-1">
+                    <input type="text" id="dob-text" placeholder="ตัวอย่าง: 01/01/2565" class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200 w-full">
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="calculate-btn" class="w-full sm:w-1/2 px-6 py-3 bg-teal-600 text-white font-semibold text-lg rounded-xl shadow-md hover:bg-teal-700 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+                    คำนวณตารางวัคซีน
+                </button>
+                <button id="reset-btn" class="w-full sm:w-1/2 px-6 py-3 bg-gray-400 text-white font-semibold text-lg rounded-xl shadow-md hover:bg-gray-500 transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                    รีเซ็ต
+                </button>
+            </div>
+        </div>
+
+        <div id="message-box" class="hidden p-4 rounded-xl text-center font-medium transition-all duration-300"></div>
+
+        <div id="schedule-results" class="hidden mt-8 space-y-6">
+            <h2 class="text-2xl sm:text-3xl font-semibold text-teal-600 text-center">ตารางการให้วัคซีน</h2>
+            
+            <div id="results-table" class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner">
+                <!-- Vaccine schedule will be dynamically added here -->
+            </div>
+            
+            <div class="mt-8 p-6 bg-yellow-100 border-l-4 border-yellow-500 rounded-xl shadow-md">
+                <h3 class="text-xl font-semibold text-yellow-700">ข้อควรทราบ:</h3>
+                <ul class="list-disc list-inside mt-2 text-sm text-gray-800 space-y-2">
+                    <li>ตารางนี้เป็นเพียงคำแนะนำเบื้องต้น โปรดปรึกษาแพทย์หรือบุคลากรทางการแพทย์เพื่อวางแผนการให้วัคซีนที่เหมาะสมกับเด็กแต่ละคน</li>
+                    <li>หากเด็กมีโรคประจำตัวหรือแพ้ยา ควรแจ้งให้แพทย์ทราบก่อนการฉีดวัคซีน</li>
+                    <li>ตารางนี้อาจแตกต่างกันไปตามแนวปฏิบัติของโรงพยาบาลหรือพื้นที่ที่ให้บริการ</li>
+                    <li>หากมีการฉีดวัคซีนล่าช้า ควรปรึกษาแพทย์เพื่อกำหนดตารางใหม่</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dobInput = document.getElementById('dob-text');
+            const calculateBtn = document.getElementById('calculate-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const scheduleResults = document.getElementById('schedule-results');
+            const resultsTable = document.getElementById('results-table');
+            const messageBox = document.getElementById('message-box');
+
+            // Define the vaccination schedule intervals in months and years
+            const vaccineSchedule = [
+                { period: "แรกเกิด", period_en: "Birth", vaccines: ["BCG", "ตับอักเสบบี (เข็มที่ 1)"] },
+                { period: "2 เดือน", period_en: "2 months", months: 2, vaccines: ["คอตีบ-บาดทะยัก-ไอกรน-ตับอักเสบบี-ฮิบ (เข็มที่ 1)", "โปลิโอชนิดฉีด (IPV) (เข็มที่ 1)", "โรต้า (เข็มที่ 1)"] },
+                { period: "4 เดือน", period_en: "4 months", months: 4, vaccines: ["คอตีบ-บาดทะยัก-ไอกรน-ตับอักเสบบี-ฮิบ (เข็มที่ 2)", "โปลิโอชนิดฉีด (IPV) (เข็มที่ 2)", "โรต้า (เข็มที่ 2)"] },
+                { period: "6 เดือน", period_en: "6 months", months: 6, vaccines: ["คอตีบ-บาดทะยัก-ไอกรน-ตับอักเสบบี-ฮิบ (เข็มที่ 3)", "โปลิโอ (เข็มที่ 3)"] },
+                { period: "9 เดือน", period_en: "9 months", months: 9, vaccines: ["หัด-หัดเยอรมัน-คางทูม (MMR) (เข็มที่ 1)"] },
+                { period: "1 ปี", period_en: "1 year", months: 12, vaccines: ["ไข้สมองอักเสบเจอี (เข็มที่ 1)"] },
+                { period: "1 ปี 6 เดือน", period_en: "1.5 years", months: 18, vaccines: ["คอตีบ-บาดทะยัก-ไอกรน-ตับอักเสบบี-ฮิบ (เข็มที่ 4)", "โปลิโอ (เข็มที่ 4)", "ไข้สมองอักเสบเจอี (เข็มที่ 2)"] },
+                { period: "2 ปี 6 เดือน", period_en: "2.5 years", months: 30, vaccines: ["ไข้สมองอักเสบเจอี (เข็มที่ 3)"] },
+                { period: "4 ปี", period_en: "4 years", months: 48, vaccines: ["คอตีบ-บาดทะยัก-ไอกรน (เข็มกระตุ้น)", "โปลิโอ (เข็มกระตุ้น)", "หัด-หัดเยอรมัน-คางทูม (MMR) (เข็มที่ 2)"] }
+            ];
+
+            const formatThaiDate = (date) => {
+                const day = date.getDate();
+                const month = date.getMonth();
+                const year = date.getFullYear() + 543; // Buddhist Era
+                const monthNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                return `${day} ${monthNames[month]} ${year}`;
+            };
+
+            const parseThaiDate = (dateStr) => {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const year = parseInt(parts[2], 10) - 543;
+                    const parsedDate = new Date(year, month, day);
+                    if (parsedDate.getFullYear() === year && parsedDate.getMonth() === month && parsedDate.getDate() === day) {
+                        return parsedDate;
+                    }
+                }
+                return null;
+            };
+
+            const calculateVaccineDates = (dob) => {
+                const dates = [];
+                const birthDate = new Date(dob);
+                
+                // Add first row for birth vaccines
+                dates.push({
+                    period: vaccineSchedule[0].period,
+                    date: formatThaiDate(birthDate),
+                    vaccines: vaccineSchedule[0].vaccines
+                });
+
+                // Calculate dates for subsequent vaccines
+                for (let i = 1; i < vaccineSchedule.length; i++) {
+                    const schedule = vaccineSchedule[i];
+                    const nextDate = new Date(birthDate);
+                    nextDate.setMonth(birthDate.getMonth() + schedule.months);
+                    
+                    dates.push({
+                        period: schedule.period,
+                        date: formatThaiDate(nextDate),
+                        vaccines: schedule.vaccines
+                    });
+                }
+                return dates;
+            };
+
+            const renderSchedule = (schedule) => {
+                let html = '';
+                schedule.forEach((item, index) => {
+                    html += `
+                        <div class="p-4 rounded-xl ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'} shadow-sm border border-gray-200 mb-4 transition duration-300 ease-in-out hover:shadow-md">
+                            <div class="flex items-baseline justify-between">
+                                <span class="text-xl font-bold text-gray-800">${item.period}</span>
+                                <span class="text-lg font-medium text-teal-600">${item.date}</span>
+                            </div>
+                            <ul class="list-disc list-inside ml-4 mt-2 text-gray-700 text-sm sm:text-base">
+                                ${item.vaccines.map(v => `<li>${v}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                });
+                resultsTable.innerHTML = html;
+            };
+
+            const showMessage = (text, type = 'error') => {
+                messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                } else {
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                }
+                messageBox.textContent = text;
+            };
+            
+            calculateBtn.addEventListener('click', () => {
+                const dobStr = dobInput.value;
+                if (!dobStr) {
+                    showMessage("กรุณาป้อนวันเกิดของเด็ก");
+                    scheduleResults.classList.add('hidden');
+                    return;
+                }
+                
+                const dob = parseThaiDate(dobStr);
+                if (!dob || isNaN(dob.getTime())) {
+                    showMessage("รูปแบบวันที่ไม่ถูกต้อง กรุณาป้อนในรูปแบบ วว/ดด/ปปปป (ตัวอย่าง: 01/01/2565)");
+                    scheduleResults.classList.add('hidden');
+                    return;
+                }
+                
+                const calculatedSchedule = calculateVaccineDates(dob);
+                renderSchedule(calculatedSchedule);
+                scheduleResults.classList.remove('hidden');
+                messageBox.classList.add('hidden');
+            });
+
+            // New reset button functionality
+            resetBtn.addEventListener('click', () => {
+                dobInput.value = '';
+                scheduleResults.classList.add('hidden');
+                messageBox.classList.add('hidden');
+            });
+
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js').then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    }).catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
